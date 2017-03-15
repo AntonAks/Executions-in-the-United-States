@@ -1,22 +1,46 @@
+source("f.R")
 library(readr)
 library(ggplot2)
 library(dplyr)
 
-data_set <- read_csv("~/R/Executions-in-the-United-States/data/database.csv")
+# Load the dataset
+dp_data <- read_csv("~/R/Executions-in-the-United-States/data/database.csv"
+                    , col_types = cols(Date = col_date(format = "%m/%d/%Y")))
 
-data_set$Year <-  as.integer(substr(data_set$Date,7,10))
-data_set <- data_set%>%
-  filter(`Victim Count`<50)
+dp_data$Year <- as.integer(substr(dp_data$Date,1,4)) 
+
+summary(dp_data)
+
+hist_1 <- 
+ggplot(dp_data, aes(x = Year, fill = Method) ) +
+  ggtitle("Number of executions by years and methods") +
+  labs(x = "Years", y = NULL) +
+  scale_x_continuous(breaks=seq(min(dp_data$Year), max(dp_data$Year), 1)) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_histogram(bins = max(dp_data$Year) - min(dp_data$Year)
+                 , binwidth = 1
+                 , colour = "black")
+
+hist_2 <- 
+  ggplot(dp_data, aes(x = Year, fill = Method) ) +
+  ggtitle("Number of executions by Regions") +
+  labs(x = "Years", y = NULL) +
+  scale_x_continuous(breaks=seq(min(dp_data$Year), max(dp_data$Year), 1)) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_histogram(bins = max(dp_data$Year) - min(dp_data$Year)
+                 , binwidth = 1
+                 , colour = "black") + 
+  facet_wrap(~ Region)
 
 
-attach(data_set)
+num_exec <- 
+  dp_data%>%
+  group_by(State, Region)%>%
+  summarise("num_e" = n_distinct(Name))
 
-p <- ggplot(data = data_set, aes(x = Age)) + 
-  geom_histogram(bins=30, color="black",fill="lightblue")
-p
+bar_1 <- 
+ggplot(num_exec, aes(x = reorder(State, -num_e) , y = num_e, fill = Region)) + 
+  geom_bar(stat = "identity")
 
 
-p1 <- ggplot(data = data_set, aes(x = Year, y = `Victim Count`)) + 
-  geom_jitter() +
-  facet_grid(Method ~ .)
-p1
+multiplot(hist_1, hist_2)
